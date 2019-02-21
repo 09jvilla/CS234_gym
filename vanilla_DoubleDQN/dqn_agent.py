@@ -22,7 +22,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 class Agent():
     """Interacts with and learns from the environment."""
 
-    def __init__(self, state_size, action_size, seed):
+    def __init__(self, state_size, action_size, seed, enable_curiosity):
         """Initialize an Agent object.
         
         Params
@@ -34,6 +34,7 @@ class Agent():
         self.state_size = state_size
         self.action_size = action_size
         self.seed = random.seed(seed)
+        self.enable_curiosity = enable_curiosity
 
         # Q-Network
         self.qnetwork_local = QNetwork(state_size, action_size, seed).to(device)
@@ -124,7 +125,10 @@ class Agent():
         #forward model loss
         loss3 = F.mse_loss(ns_expected, next_states)
 
-        loss = loss1 + loss2 + loss3
+        if self.enable_curiosity:
+            loss = loss1 + loss2 + loss3
+        else:
+            loss = loss1
 
         # Minimize the loss
         self.optimizer.zero_grad()

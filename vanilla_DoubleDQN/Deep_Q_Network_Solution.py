@@ -3,8 +3,6 @@ import random
 import torch
 import numpy as np
 from collections import deque
-import matplotlib
-matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
 
@@ -30,7 +28,7 @@ print('Number of actions: ', env.action_space.n)
 
 from dqn_agent import Agent
 
-agent = Agent(state_size=8, action_size=4, seed=0)
+agent = Agent(state_size=8, action_size=4, seed=0, enable_curiosity=False)
 
 # watch an untrained agent
 state = env.reset()
