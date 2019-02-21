@@ -28,20 +28,21 @@ print('Number of actions: ', env.action_space.n)
 
 from dqn_agent import Agent
 
-agent = Agent(state_size=8, action_size=4, seed=0, enable_curiosity=False)
+agent = Agent(state_size=8, action_size=4, seed=0, enable_curiosity=True)
 
 # watch an untrained agent
-state = env.reset()
 """
+state = env.reset()
+
 for j in range(200):
     action = agent.act(state)
     env.render()
     state, reward, done, _ = env.step(action)
     if done:
         break 
-"""     
+    
 env.close()
-
+"""
 
 # ### 3. Train the Agent with DQN
 # 
@@ -89,7 +90,19 @@ def dqn(n_episodes=2000, max_t=1000, eps_start=1.0, eps_end=0.01, eps_decay=0.99
             break
     return scores
 
-scores = dqn()
+scores = dqn(n_episodes=500)
+
+fig=plt.figure()
+ax = fig.add_subplot(111)
+l1 = [tup[0] for tup in agent.loss_list]
+l2 = [tup[1] for tup in agent.loss_list]
+l3 = [tup[2] for tup in agent.loss_list]
+
+plt.plot(np.arange(len(agent.loss_list)), l1)
+plt.plot(np.arange(len(agent.loss_list)), l2)
+plt.plot(np.arange(len(agent.loss_list)), l3)
+plt.legend(["loss1","loss2","loss3"])
+plt.show()
 
 # plot the scores
 fig = plt.figure()
@@ -106,7 +119,7 @@ plt.show()
 
 # In[ ]:
 
-
+"""
 # load the weights from file
 agent.qnetwork_local.load_state_dict(torch.load('checkpoint.pth'))
 
@@ -120,7 +133,7 @@ for i in range(3):
             break 
             
 env.close()
-
+"""
 
 # ### 5. Explore
 # 

@@ -17,6 +17,10 @@ TAU = 1e-3              # for soft update of target parameters
 LR = 5e-4               # learning rate 
 UPDATE_EVERY = 4        # how often to update the network
 
+EXTRINSIC_WEIGHT = 0.01 ## weight of extrinsic reward
+FORWARD_WEIGHT = 10.0
+INVERSE_WEIGHT = 1.0
+
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 class Agent():
@@ -52,6 +56,8 @@ class Agent():
         self.memory = ReplayBuffer(action_size, BUFFER_SIZE, BATCH_SIZE, seed)
         # Initialize time step (for updating every UPDATE_EVERY steps)
         self.t_step = 0
+
+        self.loss_list = []
     
     def step(self, state, action, reward, next_state, done):
         # Save experience in replay memory
@@ -126,6 +132,10 @@ class Agent():
         loss3 = F.mse_loss(ns_expected, next_states)
 
         if self.enable_curiosity:
+            loss1 = loss1*EXTRINSIC_WEIGHT
+            loss2 = loss2*INVERSE_WEIGHT
+            loss3 = loss3*FORWARD_WEIGHT
+
             loss = loss1 + loss2 + loss3
         else:
             loss = loss1
@@ -134,6 +144,8 @@ class Agent():
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
+
+        self.loss_list.append((loss1,loss2,loss3))
 
         # ------------------- update target network ------------------- #
         self.soft_update(self.qnetwork_local, self.qnetwork_target, TAU)                     
