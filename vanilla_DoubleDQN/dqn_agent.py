@@ -2,11 +2,13 @@ import numpy as np
 import random
 from collections import namedtuple, deque
 
-from model import QNetwork
+from model import QNetwork,FwdModel,InverseModel
 
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
+
+import pdb
 
 BUFFER_SIZE = int(1e5)  # replay buffer size
 BATCH_SIZE = 64         # minibatch size
@@ -36,7 +38,14 @@ class Agent():
         # Q-Network
         self.qnetwork_local = QNetwork(state_size, action_size, seed).to(device)
         self.qnetwork_target = QNetwork(state_size, action_size, seed).to(device)
-        self.optimizer = optim.Adam(self.qnetwork_local.parameters(), lr=LR)
+        
+        # Curiosity Elements
+        self.fwd_model = FwdModel(state_size, action_size, seed).to(device)
+        self.inverse_model = InverseModel(state_size, action_size, seed).to(device)
+
+        ##Optimizer
+        params_to_opt = list(self.qnetwork_local.parameters()) + list(self.fwd_model.parameters()) + list(self.inverse_model.parameters())
+        self.optimizer = optim.Adam( params_to_opt, lr=LR)
 
         # Replay memory
         self.memory = ReplayBuffer(action_size, BUFFER_SIZE, BATCH_SIZE, seed)
@@ -84,6 +93,7 @@ class Agent():
             gamma (float): discount factor
         """
         states, actions, rewards, next_states, dones = experiences
+        
 
         # Get max predicted Q values (for next states) from target model
         Q_targets_next = self.qnetwork_target(next_states).detach().max(1)[0].unsqueeze(1)
@@ -93,8 +103,29 @@ class Agent():
         # Get expected Q values from local model
         Q_expected = self.qnetwork_local(states).gather(1, actions)
 
+        ##Now get the result of evaluating the forward model
+        ##FIXME: do I need to normalize state? Probably!
+        act_onehot = torch.FloatTensor(BATCH_SIZE, self.action_size).to(device)
+        act_onehot.zero_()
+        act_onehot.scatter_(1,actions,1)
+        ns_expected = self.fwd_model(states,act_onehot)
+
+        ##Now get the result of evaluating the inverse model
+        a_expected = self.inverse_model(states, next_states)
+
         # Compute loss
-        loss = F.mse_loss(Q_expected, Q_targets)
+        #exploration loss
+        loss1 = F.mse_loss(Q_expected, Q_targets)
+
+        #inverse model loss
+        criterion = torch.nn.CrossEntropyLoss()
+        loss2 = criterion(a_expected, torch.squeeze(actions))
+
+        #forward model loss
+        loss3 = F.mse_loss(ns_expected, next_states)
+
+        loss = loss1 + loss2 + loss3
+
         # Minimize the loss
         self.optimizer.zero_grad()
         loss.backward()
