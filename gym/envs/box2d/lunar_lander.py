@@ -78,10 +78,12 @@ class LunarLander(gym.Env, EzPickle):
 
     continuous = False
 
-    def __init__(self):
+    def __init__(self, sparse_rewards=False):
         EzPickle.__init__(self)
         self.seed()
         self.viewer = None
+
+        self.sparse_rewards=sparse_rewards
 
         self.world = Box2D.b2World()
         self.moon = None
@@ -306,6 +308,10 @@ class LunarLander(gym.Env, EzPickle):
 
         reward -= m_power*0.30  # less fuel spent is better, about -30 for heurisic landing
         reward -= s_power*0.03
+
+        ##No reward signal until landing
+        if self.sparse_rewards:
+            reward = 0
 
         done = False
         if self.game_over or abs(state[0]) >= 1.0:

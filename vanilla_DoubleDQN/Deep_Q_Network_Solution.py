@@ -4,7 +4,7 @@ import torch
 import numpy as np
 from collections import deque
 import matplotlib.pyplot as plt
-
+import pdb
 
 
 
@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 
 
 env = gym.make('LunarLander-v2')
+env.sparse_rewards=True
 env.seed(0)
 print('State shape: ', env.observation_space.shape)
 print('Number of actions: ', env.action_space.n)
@@ -28,10 +29,10 @@ print('Number of actions: ', env.action_space.n)
 
 from dqn_agent import Agent
 
-agent = Agent(state_size=8, action_size=4, seed=0, enable_curiosity=True)
+agent = Agent(state_size=8, action_size=4, seed=0, enable_curiosity=False)
 
 # watch an untrained agent
-"""
+
 state = env.reset()
 
 for j in range(200):
@@ -42,7 +43,7 @@ for j in range(200):
         break 
     
 env.close()
-"""
+
 
 # ### 3. Train the Agent with DQN
 # 
@@ -90,7 +91,7 @@ def dqn(n_episodes=2000, max_t=1000, eps_start=1.0, eps_end=0.01, eps_decay=0.99
             break
     return scores
 
-scores = dqn(n_episodes=500)
+scores = dqn()
 
 fig=plt.figure()
 ax = fig.add_subplot(111)
